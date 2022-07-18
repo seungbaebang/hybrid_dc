@@ -361,7 +361,7 @@ void infinite::outgoing_from_source_g(const Eigen::VectorXd &sigma,
 {
   #pragma omp parallel for
   for(int i=0; i<leaf_cells.size(); i++){
-    std::cout<<"num thread: "<<omp_get_num_threads()<<std::endl;
+    // std::cout<<"num thread: "<<omp_get_num_threads()<<std::endl;
     int cell_id = leaf_cells[i];
     const std::vector<int> &ids = PI[cell_id];
     Mg.row(cell_id)=Eigen::RowVectorXcd::Zero(np);
