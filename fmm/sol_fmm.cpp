@@ -259,7 +259,7 @@ bool infinite::fmm_gmres(const Eigen::VectorXd &rhs,
   w(0) = beta;
   for(int k=1; k<=restart; ++k)
   { 
-    std::cout<<"iter: "<<iters;
+    // std::cout<<"iter: "<<iters;
     ++iters;
     v = Eigen::VectorXd::Unit(m,k-1);
 
@@ -305,7 +305,7 @@ bool infinite::fmm_gmres(const Eigen::VectorXd &rhs,
     tol_error = std::abs(w(k)) / r0Norm;
     // tol_error = (rhs - b).norm() / r0Norm;
     bool stop = (k==m || tol_error < tol || iters == maxIters);
-    std::cout<<", err: "<<tol_error<<std::endl;
+    // std::cout<<", err: "<<tol_error<<std::endl;
 
 
     if(stop || k== restart)
@@ -414,7 +414,7 @@ bool infinite::fmm_gmres_hybrid(const Eigen::VectorXd &rhs,
   w(0) = beta;
   for(int k=1; k<=restart; ++k)
   { 
-    std::cout<<"iter: "<<iters;
+    // std::cout<<"iter: "<<iters;
     ++iters;
     v = Eigen::VectorXd::Unit(m,k-1);
 
@@ -461,7 +461,7 @@ bool infinite::fmm_gmres_hybrid(const Eigen::VectorXd &rhs,
     tol_error = std::abs(w(k)) / r0Norm;
     // tol_error = (rhs - b).norm() / r0Norm;
     bool stop = (k==m || tol_error < tol || iters == maxIters);
-    std::cout<<", err: "<<tol_error<<std::endl;
+    // std::cout<<", err: "<<tol_error<<std::endl;
     {
       Eigen::VectorXd w1 = w;
       Eigen::Ref<Eigen::VectorXd> y1 = w1.head(k);
@@ -588,7 +588,7 @@ bool infinite::fmm_gmres_hybrid(const Eigen::VectorXd &rhs,
   w(0) = beta;
   for(int k=1; k<=restart; ++k)
   { 
-    std::cout<<"iter: "<<iters;
+    // std::cout<<"iter: "<<iters;
     ++iters;
     v = Eigen::VectorXd::Unit(m,k-1);
 
@@ -635,7 +635,7 @@ bool infinite::fmm_gmres_hybrid(const Eigen::VectorXd &rhs,
     tol_error = std::abs(w(k)) / r0Norm;
     // tol_error = (rhs - b).norm() / r0Norm;
     bool stop = (k==m || tol_error < tol || iters == maxIters);
-    std::cout<<", err: "<<tol_error<<std::endl;
+    // std::cout<<", err: "<<tol_error<<std::endl;
 
 
     if(stop || k== restart)
@@ -743,7 +743,7 @@ bool infinite::update_fmm_gmres_hybrid(
   w(0) = beta;
   for(int k=1; k<=restart; ++k)
   { 
-    std::cout<<"iter: "<<iters;
+    // std::cout<<"iter: "<<iters;
     ++iters;
     v = Eigen::VectorXd::Unit(m,k-1);
 
@@ -792,7 +792,7 @@ bool infinite::update_fmm_gmres_hybrid(
     tol_error = std::abs(w(k)) / r0Norm;
     // tol_error = (rhs - b).norm() / r0Norm;
     bool stop = (k==m || tol_error < tol || iters == maxIters);
-    std::cout<<", err: "<<tol_error<<std::endl;
+    // std::cout<<", err: "<<tol_error<<std::endl;
 
 
     if(stop || k== restart)
