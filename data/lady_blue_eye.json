@@ -1,0 +1,10 @@
+{
+    "df_curve": "../data/lady_blue_eye.txt",
+    "resol_height": 2048,
+    "resol_width": 2048,
+    "zoom_min_x": 252,
+    "zoom_min_y": 578,
+    "zoom_max_x": 270,
+    "zoom_max_y": 596,
+    "num_frame": 140
+}

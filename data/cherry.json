@@ -1,0 +1,10 @@
+{
+    "df_curve": "../data/cherry.txt",
+    "resol_height": 2048,
+    "resol_width": 2048,
+    "zoom_min_x": 262.2,
+    "zoom_min_y": 421.9,
+    "zoom_max_x": 269.2,
+    "zoom_max_y": 428.9,
+    "num_frame": 10
+}

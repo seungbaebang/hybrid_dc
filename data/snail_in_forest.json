@@ -1,0 +1,10 @@
+{
+    "df_curve": "../data/snail_in_forest.txt",
+    "resol_height": 2048,
+    "resol_width": 2048,
+    "zoom_min_x": 384.7,
+    "zoom_min_y": 276.75,
+    "zoom_max_x": 391.7,
+    "zoom_max_y": 283.75,
+    "num_frame": 160
+}
