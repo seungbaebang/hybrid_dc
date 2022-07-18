@@ -11,7 +11,7 @@ option(INFINITE_USE_STATIC_LIBRARY "Use infinite as static library" ON)
 option(INFINITE_USE_OPENMP "Use OpenMP" ON)
 
 # libigl
-option(LIBIGL_USE_PREBUILT_LIBRARIES "Use prebuilt libraries"       ON)
+option(LIBIGL_USE_PREBUILT_LIBRARIES "Use prebuilt libraries"       OFF)
 option(LIBIGL_USE_STATIC_LIBRARY     "Use libigl as static library" ON)
 # option(LIBIGL_WITH_CGAL              "Use CGAL"                     OFF)
 # option(LIBIGL_WITH_COMISO            "Use CoMiso"                   OFF)
@@ -28,9 +28,12 @@ option(LIBIGL_WITH_PNG               "Use PNG"                      ON)
 # option(LIBIGL_WITH_PREDICATES        "Use exact predicates"         OFF)
 # option(LIBIGL_WITH_XML               "Use XML"                      OFF)
 
-find_package(LIBIGL REQUIRED)
-find_package (Eigen3 3.3 REQUIRED NO_MODULE)
-
+if(LIBIGL_USE_PREBUILT_LIBRARIES)
+    find_package(LIBIGL REQUIRED)
+    find_package (Eigen3 3.3 REQUIRED NO_MODULE)
+else()
+    include(libigl)
+endif()
 
 if(INFINITE_USE_OPENMP)
     find_package(OpenMP REQUIRED)
