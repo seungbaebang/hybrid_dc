@@ -171,6 +171,7 @@ void infinite::incoming_from_outgoing_f(const std::vector<std::vector<int> > &PI
   #pragma omp parallel for
   for(int i=0; i<Inters.size(); i++){
     const VecXcd_list &Ok = Ok_inter_list_list[i];
+    // #pragma omp parallel for
     for(int j=0; j<Inters[i].size(); j++){
       int ii = Inters[i][j];
       if(PI[ii].size()==0)

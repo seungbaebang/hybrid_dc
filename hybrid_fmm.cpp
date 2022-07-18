@@ -31,14 +31,15 @@
 #include "util/create_regular_grid.h"
 
 
-
-
+// #define omp_get_thread_num() 0
+// set OMP_NUM_THREADS=1
 
 int main( int argc, char **argv )
 {
+// omp_set_num_threads(1);
 
   std::string result_folder = "../result/";
-  std::string diffcurv_file_path = "../data/cherry_blur.txt";
+  std::string diffcurv_file_path = "/Users/seungbae/Sources/GitHub/infinite_vector_graphics/hybrid_dc_code/data/purple_cloak.txt";
 
   if(argc>1){
     diffcurv_file_path = std::string(argv[1]);
