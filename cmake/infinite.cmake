@@ -11,7 +11,7 @@ option(INFINITE_USE_STATIC_LIBRARY "Use infinite as static library" ON)
 option(INFINITE_USE_OPENMP "Use OpenMP" ON)
 
 # libigl
-option(LIBIGL_USE_PREBUILT_LIBRARIES "Use prebuilt libraries"       OFF)
+option(LIBIGL_USE_PREBUILT_LIBRARIES "Use prebuilt libraries"       ON)
 option(LIBIGL_USE_STATIC_LIBRARY     "Use libigl as static library" ON)
 # option(LIBIGL_WITH_CGAL              "Use CGAL"                     OFF)
 # option(LIBIGL_WITH_COMISO            "Use CoMiso"                   OFF)
