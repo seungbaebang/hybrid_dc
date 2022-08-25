@@ -60,6 +60,19 @@ namespace infinite{
                        Eigen::MatrixXd &W);
 
 
+    void eval_fmm_integral_uni(const Eigen::MatrixX2d &P,
+                       const Eigen::MatrixX2i &E,
+                       const Eigen::MatrixX2d &C,
+                       const Eigen::MatrixX2d &N,
+                       const Eigen::VectorXd &L,
+                       const Eigen::MatrixX2d &Q,
+                       const Eigen::MatrixXd &sigma,
+                       const Eigen::MatrixXd &mu,
+                       const int &num_expansion,
+                       const int &min_pnt_num,
+                       const int &max_depth,
+                       Eigen::MatrixXd &W);
+
 
 }
 

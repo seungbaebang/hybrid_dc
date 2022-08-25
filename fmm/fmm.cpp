@@ -1,6 +1,145 @@
 #include "fmm.h"
 
 
+void infinite::precompute_expansions_cell_dependent
+                    (const Eigen::MatrixX2d &N,
+                     const Eigen::VectorXd &L,
+                     const int &num_expansion,
+                     const std::vector<std::vector<int > > &Q_PI,
+                     const Eigen::MatrixXi &Q_CH,
+                     const Eigen::VectorXi &Q_LV,
+                     const Eigen::MatrixXd &Q_CN, 
+                     const std::vector<std::vector<int> > &Q_inters,
+                     std::vector<VecXcd_list> &Ik_out_list_list,
+                     std::vector<VecXcd_list> &Ok_inter_list_list,
+                     MatXcd_list &Ik_child_list,
+                     VecXcd_list &lw_list)
+{
+  double PI_4 = 4*igl::PI;
+  double PI_2 = 2*igl::PI;
+
+
+  std::vector<std::vector<int > > levels(Q_LV.maxCoeff()+1);
+  for (int i=0; i<Q_LV.size(); i++){
+    levels[Q_LV(i)].emplace_back(i);
+  }
+
+  Eigen::VectorXcd Ni = mat2d_to_compvec(N);
+  Eigen::VectorXcd Q_CNi = mat2d_to_compvec(Q_CN);
+
+  Ok_inter_list_list.resize(Q_inters.size());
+  #pragma omp parallel for
+  for(int i=0; i<Q_inters.size(); i++){
+    VecXcd_list Ok_list(Q_inters[i].size());
+    for(int j=0; j<Q_inters[i].size(); j++){
+      Eigen::VectorXcd Ok = Eigen::VectorXcd::Zero(2*num_expansion);
+      compute_Ok(Q_CNi[i]-Q_CNi[Q_inters[i][j]],2*num_expansion,Ok);
+      Ok_list[j]=Ok;
+    }
+    Ok_inter_list_list[i]=Ok_list;
+  }
+
+  Ik_child_list.resize(Q_CH.rows());
+  #pragma omp parallel for
+  for(int i=0; i<Q_CH.rows();i++){
+    if(Q_PI[i].size()==0)
+      continue;
+    if(Q_CH(i,0)<0)
+      continue;
+    Eigen::MatrixXcd Ik(4,num_expansion);
+    for(int ci=0; ci<4; ci++){
+      compute_Ik(Q_CNi[Q_CH(i,ci)]-Q_CNi[i],num_expansion,Ik,ci);
+    }
+    Ik_child_list[i]=Ik;
+  }
+  std::vector<int> leaf_cells;
+  for(int i=0; i<Q_CH.rows(); i++){
+    if(Q_CH(i,0)==-1){
+      leaf_cells.emplace_back(i);
+    }
+  }
+
+  lw_list.resize(Q_PI.size());
+  // std::vector<Eigen::VectorXcd> lw_list(leaf_cells.size());
+  #pragma omp parallel for
+  for(int i=0; i<leaf_cells.size(); i++){
+    int li = leaf_cells[i];    
+    Eigen::VectorXcd lw(Q_PEI[li].size());
+    for(int ii=0; ii<Q_PEI[li].size(); ii++){
+      if(Q_L[li][ii]<1e-15){
+        lw(ii)=0;
+        continue;
+      }
+      //assumes tiny Q_L is already removed
+      int pid = Q_PEI[li][ii];
+      Eigen::Matrix2d Pe = Q_PP[li][ii];
+      std::complex<double> za(Pe(0,0),Pe(0,1));
+      std::complex<double> zb(Pe(1,0),Pe(1,1));
+      const std::complex<double> &w = (zb-za)/std::norm(zb-za);
+      lw(ii)=Q_L[li][ii]*L(pid)*std::conj(w);
+    }
+    lw_list[li]=lw;
+  }
+
+  Ik_out_list_list.resize(Q_PI.size());
+  #pragma omp parallel for
+  for(int i=0; i<leaf_cells.size(); i++){
+    int li = leaf_cells[i];
+    std::complex<double> cni = Q_CNi(li);
+    VecXcd_list Ik_list(Q_PEI[li].size());
+    for(int ii=0; ii<Q_PEI[li].size(); ii++){
+      if(Q_L[li][ii]<1e-15){
+        Eigen::VectorXcd Ik = Eigen::VectorXcd::Zero(num_expansion);
+        Ik_list[ii]=Ik;
+        continue;
+      }
+      Eigen::Matrix2d Pe = Q_PP[li][ii];
+      std::complex<double> za(Pe(0,0),Pe(0,1));
+      std::complex<double> zb(Pe(1,0),Pe(1,1));
+      Eigen::VectorXcd Ik1 = Eigen::VectorXcd::Zero(num_expansion+1);
+      Eigen::VectorXcd Ik2 = Eigen::VectorXcd::Zero(num_expansion+1);
+      compute_Ik(zb-cni,num_expansion+1,Ik1);
+      compute_Ik(za-cni,num_expansion+1,Ik2);
+      Ik_list[ii] = lw_list[li](ii)*(Ik1.tail(num_expansion)-Ik2.tail(num_expansion));
+    }
+    Ik_out_list_list[li]=Ik_list;
+  }
+
+  Ok_inc_list_list.resize(Q_big_seps.size());
+  #pragma omp parallel for
+  for(int i=0; i<Q_big_seps.size(); i++){
+    const std::complex<double> &cni = Q_CNi(i);
+
+    Ok_inc_list_list[i].resize(Q_big_seps[i].size());
+    for(int ii=0; ii<Q_big_seps[i].size(); ii++){
+      int l4_cell = Q_big_seps[i][ii];
+      Ok_inc_list_list[i][ii].resize(Q_PEI[l4_cell].size());
+      for(int jj=0; jj<Q_PEI[l4_cell].size(); jj++){
+
+        int pid = Q_PEI[l4_cell][jj];
+
+        Eigen::Matrix2d Pe = Q_PP[l4_cell][jj];
+        std::complex<double> za(Pe(0,0),Pe(0,1));
+        std::complex<double> zb(Pe(1,0),Pe(1,1));
+
+        double l = Q_L[l4_cell][jj]*L(pid);
+
+        Eigen::VectorXcd Ok1 = Eigen::VectorXcd::Zero(num_expansion-1);
+        Eigen::VectorXcd Ok2 = Eigen::VectorXcd::Zero(num_expansion-1);
+        compute_Ok_no_log(zb-cni,num_expansion-1,Ok1);
+        compute_Ok_no_log(za-cni,num_expansion-1,Ok2);
+
+
+        Eigen::VectorXcd Ok = Eigen::VectorXcd::Zero(num_expansion+1);
+        Ok(0) = -green_line_integral(Pe,l,Q_CN.row(i));
+        Ok(1) = -lw_list[l4_cell](jj)*(log((zb-cni)/(za-cni)));
+        Ok.tail(num_expansion-1) = lw_list[l4_cell](jj)*(Ok1-Ok2);
+        Ok_inc_list_list[i][ii][jj]=Ok;
+      }
+    }
+  }
+}
+
 
 
 

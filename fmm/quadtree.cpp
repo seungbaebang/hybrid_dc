@@ -1580,3 +1580,209 @@ void infinite::quadtree(const Eigen::MatrixXd &P,
 
 
 
+void quadtree_uniform(const Eigen::MatrixXd &P, 
+             const Eigen::RowVector2d& minP, 
+             const Eigen::RowVector2d& maxP,
+             const int& max_depth,
+             const int& min_pnt_num,
+             std::vector<std::vector<int> > &point_indices, 
+             Eigen::MatrixXi &CH,
+             Eigen::VectorXi &PA,
+             Eigen::MatrixXd &CN, 
+             Eigen::VectorXd &W) 
+{
+
+ std::vector<Eigen::Vector4i,
+      Eigen::aligned_allocator<Eigen::Vector4i> > children;
+  std::vector<Eigen::RowVector2d,
+      Eigen::aligned_allocator<Eigen::RowVector2d> > centers;
+
+  std::vector<int> parent;
+
+  std::vector<double> widths;
+
+  auto get_quad = [](const Eigen::RowVector2d &location,
+    const Eigen::RowVector2d &center) {
+    int index = 0;
+    if (location(0) >= center(0)) {
+      index = index + 1;
+    }
+    if (location(1) >= center(1)) {
+      index = index + 2;
+    }
+    return index;
+  };
+
+  std::function<
+      Eigen::RowVector2d(const Eigen::RowVector2d, const double,
+          const int)> translate_center = [](
+      const Eigen::RowVector2d &parent_center, const double h,
+      const int child_index) {
+    Eigen::RowVector2d change_vector;
+    change_vector << -h, -h;
+
+    //positive x chilren are 1,3
+    if (child_index % 2) {
+      change_vector(0) = h;
+    }
+    //positive y children are 2,3
+    if (child_index == 2 || child_index == 3) {
+      change_vector(1) = h;
+    }
+    Eigen::RowVector2d output = parent_center + change_vector;
+    return output;
+  };
+
+  // How many cells do we have so far?
+  int m = 0;
+
+  int opt_depth = 0;
+
+  // Useful list of number 0,1,2,3
+  const Eigen::Vector4i zero_to_three =
+      (Eigen::Vector4i() << 0, 1, 2, 3).finished();
+  const Eigen::Vector4i neg_ones = Eigen::Vector4i::Constant(-1);
+
+  std::function<void(const int, const int)> depth_test;
+  depth_test = [&depth_test, &translate_center, &get_quad, &m, &zero_to_three,
+      &neg_ones, &P, &point_indices, &children, &centers, &widths,
+      &max_depth, &min_pnt_num, &opt_depth](const int index, const int depth) -> void {
+    if (point_indices.at(index).size() > min_pnt_num && depth < max_depth) {
+      //give the parent access to the children
+      children.at(index) = zero_to_three.array() + m;
+      //make the children's data in our arrays
+
+      //Add the children to the lists, as default children
+      double h = widths.at(index) / 2;
+      Eigen::RowVector2d curr_center = centers.at(index);
+
+      for (int i = 0; i < 4; i++) {
+        children.emplace_back(neg_ones);
+        point_indices.emplace_back(std::vector<int>());
+        centers.emplace_back(translate_center(curr_center, h / 2, i));
+        widths.emplace_back(h);
+      }
+
+      //Split up the points into the corresponding children
+      for (int j = 0; j < point_indices.at(index).size(); j++) {
+        int curr_point_index = point_indices.at(index).at(j);
+        int cell_of_curr_point = get_quad(P.row(curr_point_index),
+            curr_center) + m;
+        point_indices.at(cell_of_curr_point).emplace_back(
+            curr_point_index);
+      }
+
+      //Now increase m
+      m += 4;
+      opt_depth = depth;
+      // Look ma, I'm calling myself.
+      for (int i = 0; i < 4; i++) {
+        depth_test(children.at(index)(i), depth + 1);
+      }
+    }
+  };
+
+
+  std::function<void(const int, const int)> helper;
+  helper = [&helper, &translate_center, &get_quad, &m, &zero_to_three,
+      &neg_ones, &P, &point_indices, &children, &parent, &centers, &widths,
+      &opt_depth](const int index, const int depth) -> void {
+    if (depth <= opt_depth) {
+      //give the parent access to the children
+      children.at(index) = zero_to_three.array() + m;
+      //make the children's data in our arrays
+
+      //Add the children to the lists, as default children
+      double h = widths.at(index) / 2;
+      Eigen::RowVector2d curr_center = centers.at(index);
+
+      for (int i = 0; i < 4; i++) {
+        children.emplace_back(neg_ones);
+        point_indices.emplace_back(std::vector<int>());
+        centers.emplace_back(translate_center(curr_center, h / 2, i));
+        widths.emplace_back(h);
+        parent.emplace_back(index);
+      }
+
+      //Split up the points into the corresponding children
+      for (int j = 0; j < point_indices.at(index).size(); j++) {
+        int curr_point_index = point_indices.at(index).at(j);
+        int cell_of_curr_point = get_quad(P.row(curr_point_index),
+            curr_center) + m;
+        point_indices.at(cell_of_curr_point).emplace_back(
+            curr_point_index);
+      }
+
+      //Now increase m
+      m += 4;
+
+      // Look ma, I'm calling myself.
+      for (int i = 0; i < 4; i++) {
+        helper(children.at(index)(i), depth + 1);
+      }
+    }
+  };
+
+
+
+  {
+    std::vector<int> all(P.rows());
+    for (int i = 0; i < all.size(); i++)
+      all[i] = i;
+    point_indices.emplace_back(all);
+  }
+  children.emplace_back(neg_ones);
+  parent.emplace_back(-1);
+
+  //Get the minimum AABB for the points
+  Eigen::RowVector2d aabb_center = (minP + maxP) / double(2.0);
+  double aabb_width = (maxP - minP).maxCoeff();
+  centers.emplace_back(aabb_center);
+  widths.emplace_back(aabb_width);
+  m++;
+
+  // then you have to actually call the function
+
+  depth_test(0,0);
+
+  //std::cout<<"opt_depth: "<<opt_depth<<std::endl;
+
+  children.clear();
+  parent.clear();
+  centers.clear();
+  widths.clear();
+  point_indices.clear();
+
+  {
+    std::vector<int> all(P.rows());
+    for (int i = 0; i < all.size(); i++)
+      all[i] = i;
+    point_indices.emplace_back(all);
+  }
+  children.emplace_back(neg_ones);
+  parent.emplace_back(-1);
+  centers.emplace_back(aabb_center);
+  widths.emplace_back(aabb_width);
+  m=1;
+
+  helper(0, 0);
+
+  //Now convert from vectors to Eigen matricies:
+  CH.resize(children.size(), 4);
+  CN.resize(centers.size(), 2);
+  W.resize(widths.size(), 1);
+  PA.resize(parent.size(),1);
+
+  for (int i = 0; i < children.size(); i++) {
+    CH.row(i) = children.at(i);
+  }
+  for (int i = 0; i < centers.size(); i++) {
+    CN.row(i) = centers.at(i);
+  }
+  for (int i = 0; i < widths.size(); i++) {
+    W(i) = widths.at(i);
+  }
+  for (int i = 0; i < parent.size(); i++) {
+    PA(i) = parent.at(i);
+  }
+}

@@ -161,7 +161,16 @@ namespace infinite{
                 Eigen::MatrixXd &CN, 
                 Eigen::VectorXd &W);
 
- 
+        void quadtree_uniform(const Eigen::MatrixXd &P, 
+                const Eigen::RowVector2d& minP, 
+                const Eigen::RowVector2d& maxP,
+                const int& max_depth,
+                const int& min_pnt_num,
+                std::vector<std::vector<int> > &point_indices, 
+                Eigen::MatrixXi &CH,
+                Eigen::VectorXi &PA,
+                Eigen::MatrixXd &CN, 
+                Eigen::VectorXd &W) 
   
 }
 #endif
