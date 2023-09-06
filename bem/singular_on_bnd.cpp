@@ -38,6 +38,53 @@
 //   }
 // }
 
+void infinite::singular_on_bnd(const VecXd_list &xe_list, 
+                     const Eigen::VectorXd &xc,
+                     VecXi_list &sing_id_list,
+                     VecXd_list &sing_t_list)
+{
+  int nb = xe_list.size(); //number of curves
+  int nc = xc.size();   //number of sample points
+
+  sing_id_list.resize(nb*nc);
+  sing_t_list.resize(nb*nc);
+
+  int ti=0;
+  for(int k=0; k<nb; k++){
+    Eigen::VectorXd xe = xe_list[k];
+    int ne = xe.size()-1; //number of line segments
+
+    Eigen::MatrixXd TT;
+    TT.resize(nc,ne);
+    for(int j=0; j<nc; j++){
+      TT.row(j) = (xc(j)-xe.head(ne).array())/
+        (xe.tail(ne).array()-xe.head(ne).array());
+    }
+    TT.resize(nc,ne);
+
+    std::vector<std::vector<int> > sing_id_vec(nc);
+    std::vector<std::vector<double> > sing_t_vec(nc);
+
+    for(int i=0; i<nc; i++){
+      std::vector<int> sing_id_vec;
+      std::vector<double> sing_t_vec;
+      for(int j=0; j<ne; j++){
+        if(TT(i,j)<=1 && TT(i,j)>=0){
+          sing_id_vec.emplace_back(j);
+          sing_t_vec.emplace_back(TT(i,j));
+        }
+      }
+      Eigen::VectorXi sing_id = Eigen::Map<Eigen::VectorXi>(sing_id_vec.data(),sing_id_vec.size());
+      Eigen::VectorXd sing_t = Eigen::Map<Eigen::VectorXd>(sing_t_vec.data(),sing_t_vec.size());
+
+      sing_id_list[k*nc+i] = sing_id.array() + ti;
+      sing_t_list[k*nc+i] = sing_t;
+    }
+    ti += ne;
+  }
+}
+
+
 void infinite::singular_on_bnd(const Eigen::VectorXd &xe, 
                      const Eigen::VectorXd &xc,
                      const int &nb,

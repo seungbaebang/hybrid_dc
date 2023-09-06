@@ -24,6 +24,41 @@
 
 namespace infinite{
     
+void eval_fmm_integral_noclip(
+                  const Eigen::MatrixXd &sigma,
+                  const Eigen::MatrixXd &mu,
+                  const int &num_expansion,
+                  const Eigen::MatrixX2d &P,
+                  const Eigen::MatrixX2i &E,
+                  const Eigen::MatrixX2d &N,
+                  const Eigen::VectorXd &L,
+                  const Eigen::MatrixX2d &Q,
+                  const std::vector<std::vector<int > > &Q_PI,
+                  const std::vector<std::vector<int > > &Q_QI,
+                  const std::vector<std::vector<int> > &levels,
+                  const Eigen::MatrixXi &Q_CH,
+                  const Eigen::VectorXi &Q_LV,
+                  const Eigen::MatrixXd &Q_CN, 
+                  const std::vector<std::vector<int> > &Q_adjs,
+                  const std::vector<std::vector<int> > &Q_small_seps,
+                  const std::vector<std::vector<int> > &Q_inters,
+                  const std::vector<std::vector<int> > &Q_big_seps,
+                  const std::vector<int> &leaf_cells,
+                  Eigen::MatrixXd& W);
+
+void eval_fmm_integral_noclip(const Eigen::MatrixX2d &P,
+                       const Eigen::MatrixX2i &E,
+                       const Eigen::MatrixX2d &C,
+                       const Eigen::MatrixX2d &N,
+                       const Eigen::VectorXd &L,
+                       const Eigen::MatrixX2d &Q,
+                       const Eigen::MatrixXd &sigma,
+                       const Eigen::MatrixXd &mu,
+                       const int &num_expansion,
+                       const int &min_pnt_num,
+                       const int &max_depth,
+                       Eigen::MatrixXd &W);
+
     void eval_fmm_integral(
                   const Eigen::MatrixXd &sigma,
                   const Eigen::MatrixXd &mu,
@@ -60,7 +95,42 @@ namespace infinite{
                        Eigen::MatrixXd &W);
 
 
-    void eval_fmm_integral_uni(const Eigen::MatrixX2d &P,
+    // void eval_fmm_integral_uni(const Eigen::MatrixX2d &P,
+    //                    const Eigen::MatrixX2i &E,
+    //                    const Eigen::MatrixX2d &C,
+    //                    const Eigen::MatrixX2d &N,
+    //                    const Eigen::VectorXd &L,
+    //                    const Eigen::MatrixX2d &Q,
+    //                    const Eigen::MatrixXd &sigma,
+    //                    const Eigen::MatrixXd &mu,
+    //                    const int &num_expansion,
+    //                    const int &min_pnt_num,
+    //                    const int &max_depth,
+    //                    Eigen::MatrixXd &W);
+
+
+void eval_fmm_integral_uni(
+                  const Eigen::MatrixXd &sigma,
+                  const Eigen::MatrixXd &mu,
+                  const int &num_expansion,
+                  const Eigen::MatrixX2d &P,
+                  const Eigen::MatrixX2i &E,
+                  const Eigen::MatrixX2d &N,
+                  const Eigen::VectorXd &L,
+                  const Eigen::MatrixX2d &Q,
+                  const std::vector<std::vector<int > > &Q_PI,
+                  const std::vector<std::vector<int > > &Q_QI,
+                  const std::vector<std::vector<int> > &levels,
+                  const Eigen::MatrixXi &Q_CH,
+                  const Eigen::VectorXi &Q_LV,
+                  const Eigen::MatrixXd &Q_CN, 
+                  const std::vector<std::vector<int> > &Q_adjs,
+                  const std::vector<std::vector<int> > &Q_inters,
+                  const std::vector<int> &leaf_cells,
+                  Eigen::MatrixXd& W);
+
+
+void eval_fmm_integral_uni(const Eigen::MatrixX2d &P,
                        const Eigen::MatrixX2i &E,
                        const Eigen::MatrixX2d &C,
                        const Eigen::MatrixX2d &N,
@@ -69,10 +139,8 @@ namespace infinite{
                        const Eigen::MatrixXd &sigma,
                        const Eigen::MatrixXd &mu,
                        const int &num_expansion,
-                       const int &min_pnt_num,
-                       const int &max_depth,
+                       const int &set_depth,
                        Eigen::MatrixXd &W);
-
 
 }
 

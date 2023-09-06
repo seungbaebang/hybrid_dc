@@ -18,6 +18,13 @@ namespace infinite
     //                     const Eigen::VectorXd &XE, 
     //                     const Eigen::VectorXd &XG, 
     //                     Eigen::VectorXd &TOE);
+
+
+    void singular_on_bnd(const VecXd_list &xe_list, 
+                     const Eigen::VectorXd &xc,
+                     VecXi_list &sing_id_list,
+                     VecXd_list &sing_t_list);
+
     void singular_on_bnd(const Eigen::VectorXd &xe, 
                      const Eigen::VectorXd &xc,
                      const int &nb,

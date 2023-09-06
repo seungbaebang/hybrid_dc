@@ -1,6 +1,47 @@
 #include "green_line_integral.h"
 
 
+double infinite::green_line_integral(const Eigen::MatrixX2d &P,
+                         const Eigen::MatrixX2i &E,
+                         const int &id,
+                         const double  &l,
+                         const Eigen::RowVector2d &Q)
+{
+  Eigen::RowVector2d a = P.row(E(id,1))-P.row(E(id,0));;
+  double q = l*l;
+  Eigen::RowVector2d b = P.row(E(id,0))-Q;
+
+  double s = b.squaredNorm();
+  double r = 2*a.dot(b);
+  r = r*(l/a.norm());
+  double srt = sqrt(4*s*q-r*r);
+  if(srt==0)
+    srt = 1e-30;
+  double l0 = log(s);
+  double l1 = log(s+q+r);
+
+  double a0 = atan2(r,srt)/srt;
+  double a1 = atan2(2*q+r,srt)/srt;
+
+  double g;
+  if(std::isnan(a0)){
+    g=0; 
+  }
+  else if(std::isnan(a1)){
+    g=0; 
+  }
+  else{
+    double a10 = a1-a0;
+    double l10 = l1-l0;
+
+    g=-l*((4*s-(r*r)/q)*a10 + (r/(2*q))*l10+l1-2)/2;//(4*igl::PI);
+  }
+  return g;
+}
+
+
+
+
 double infinite::green_line_integral(const Eigen::Matrix2d &PEs,
                          const Eigen::RowVector2d &Q)
 {

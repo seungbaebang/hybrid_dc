@@ -190,6 +190,35 @@ void infinite::incoming_from_outgoing_f(const std::vector<std::vector<int> > &PI
   }
 }
 
+void infinite::incoming_from_incoming_uni(const std::vector<std::vector<int> > &PI,
+                  const std::vector<std::vector<int> > &LV, 
+                  const Eigen::MatrixX4i &CH,
+                  const int &np,
+                  const MatXcd_list &Ik_child_list,
+                  Eigen::MatrixXcd &Lg,
+                  Eigen::MatrixXcd &Lf)
+{
+  for(int i=0; i<LV.size(); i++){
+    #pragma omp parallel for
+    for(int j=0; j<LV[i].size(); j++){
+      int cell_id = LV[i][j];
+      if(CH(cell_id,0)<0)
+        continue;
+      // if(PI[cell_id].size()==0)
+      //   continue;
+      const Eigen::MatrixXcd &Ik = Ik_child_list[cell_id];
+      for(int ci=0; ci<4; ci++){
+        int child_index = CH(cell_id,ci);
+        for(int l=0; l<np; l++){
+          for(int m=l; m<np; m++){
+            Lg(child_index,l)=Lg(child_index,l)+Ik(ci,m-l)*Lg(cell_id,m);
+            Lf(child_index,l)=Lf(child_index,l)+Ik(ci,m-l)*Lf(cell_id,m);
+          }
+        }
+      }
+    }
+  }
+}
 
 void infinite::incoming_from_incoming(const std::vector<std::vector<int> > &PI,
                   const std::vector<std::vector<int> > &LV, 
@@ -220,6 +249,10 @@ void infinite::incoming_from_incoming(const std::vector<std::vector<int> > &PI,
     }
   }
 }
+
+
+
+
 
 
 void infinite::incoming_from_incoming(const std::vector<std::vector<int> > &PI,

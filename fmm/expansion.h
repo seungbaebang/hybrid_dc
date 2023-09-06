@@ -44,6 +44,13 @@ namespace infinite{
                         const int &np,
                         Eigen::MatrixXcd &Uf);
 
+    void incoming_from_incoming_uni(const std::vector<std::vector<int> > &PI,
+                  const std::vector<std::vector<int> > &LV, 
+                  const Eigen::MatrixX4i &CH,
+                  const int &np,
+                  const MatXcd_list &Ik_child_list,
+                  Eigen::MatrixXcd &Lg,
+                  Eigen::MatrixXcd &Lf);
 
     void incoming_from_incoming(const std::vector<std::vector<int> > &PI,
                         const std::vector<std::vector<int> > &LV, 

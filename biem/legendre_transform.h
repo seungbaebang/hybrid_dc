@@ -8,6 +8,9 @@
 
 #include <igl/slice.h>
 
+#include "../util/types.h"
+
+
 namespace infinite
 {
 
@@ -23,6 +26,12 @@ namespace infinite
                         const Eigen::VectorXd &xc,
                         const int &nb,
                         Eigen::SparseMatrix<double> &ST);
+
+
+    void legendre_interpolation(const Eigen::VectorXd &xg,
+                        const VecXd_list &xc_list,
+                        Eigen::SparseMatrix<double> &ST);
+
 }
 
 #endif

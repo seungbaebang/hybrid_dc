@@ -993,6 +993,7 @@ void infinite::solve_fmm_gmres_hybrid(const Eigen::MatrixXd &b,
 
   Eigen::MatrixXd Wf;
   Eigen::MatrixXd mu_s = VU*mu;
+
   forward_fmm_f(Ni,num_expansion,qI,mu_s,leaf_cells,levels,Q_PEI,
     Q_adjs,Q_small_seps,Q_inters,Q_big_seps,Q_CH,Ik_out_list_list,Ok_inter_list_list,Ik_child_list,
     Ok_inc_list_list,F_list,nI_list,Ok_l3_list,Ik_inc_list,Wf);
@@ -1644,6 +1645,104 @@ void infinite::solve_fmm_gmres_hybrid(const Eigen::MatrixX2d &P,
     Q_adjs,Q_small_seps,Q_inters,Q_big_seps,leaf_cells,Ik_out_list_list,Ok_inter_list_list,Ik_child_list,
     Ok_inc_list_list,lw_list,G_list,F_list,nI_list,Ok_l3_list,Ik_inc_list,sigma);
 }
+
+
+void infinite::solve_fmm_gmres_hybrid_adap(
+                  const Eigen::MatrixX2d &P,
+                  const Eigen::MatrixX2i &E,
+                  const Eigen::MatrixX2d &C,
+                  const Eigen::MatrixX2d &N,
+                  const Eigen::VectorXd &L,
+                  const Eigen::MatrixX2d &Q,
+                  const Eigen::Matrix2d &minmaxQ,
+                  const Eigen::MatrixXd &b, 
+                  const Eigen::VectorXd &b_norm,
+                  const Eigen::MatrixXd &mu,
+                  const VecXd_list &xs_list,
+                  const VecXd_list &xsc_list,
+                  const Eigen::VectorXd &xg,
+                  const int &num_expansion,
+                  const int &min_pnt_num,
+                  const int &max_depth,
+                  const int &restart,
+                  const double &tol,
+                  const int &maxIters,
+                  Eigen::VectorXi &qI,
+                  std::vector<std::vector<int > > &Q_PI,
+                  std::vector<std::vector<int > > &Q_PEI,
+                  std::vector<std::vector<int > > &Q_QI,
+                  RowVec2d_list_list &Q_LL,
+                  Mat2d_list_list &Q_PP,
+                  Eigen::VectorXi &Q_PA,
+                  Eigen::MatrixXi &Q_CH,
+                  Eigen::VectorXi &Q_LV,
+                  Eigen::MatrixXd &Q_CN, 
+                  Eigen::VectorXd &Q_W,
+                  std::vector<std::vector<int> > &Q_adjs,
+                  std::vector<std::vector<int> > &Q_small_seps,
+                  std::vector<std::vector<int> > &Q_inters,
+                  std::vector<std::vector<int> > &Q_big_seps,
+                  std::vector<std::vector<int> > &Q_uni_adjs,
+                  std::vector<int> &leaf_cells,
+                  std::vector<VecXcd_list> &Ik_out_list_list,
+                  std::vector<VecXcd_list> &Ok_inter_list_list,
+                  MatXcd_list &Ik_child_list,
+                  std::vector<std::vector<VecXcd_list> > &Ok_inc_list_list,
+                  VecXcd_list &lw_list,
+                  std::vector<RowVecXd_list> &G_list,
+                  std::vector<RowVecXd_list> &F_list,
+                  std::vector<VecXi_list> &nI_list,
+                  std::vector<VecXcd_list> &Ok_l3_list,
+                  VecXcd_list &Ik_inc_list,
+                  Eigen::MatrixXd &sigma)
+{
+  // int nb = E.rows()/xsc.size();
+  int nb = xs_list.size();
+
+  VecXi_list sing_id_list;
+  VecXd_list sing_t_list;
+  infinite::singular_on_bnd(xs_list,xg,sing_id_list,sing_t_list);
+
+  Eigen::SparseMatrix<double> VU;
+  infinite::legendre_interpolation(xg,xsc_list,VU);
+
+  // Eigen::MatrixX2d PQ(P.rows()+Q.rows(),P.cols());
+  // PQ<<P,Q;
+
+  Eigen::RowVector2d minP = minmaxQ.row(0);//PQ.colwise().minCoeff();
+  Eigen::RowVector2d maxP = minmaxQ.row(1);//PQ.colwise().maxCoeff();
+
+
+  infinite::quadtree(P,E,C,Q,minP,maxP,max_depth,min_pnt_num,
+        Q_PI,Q_PEI,Q_QI,Q_LL,Q_PP,Q_CH,Q_PA,Q_LV,Q_CN,Q_W);
+
+  infinite::compute_cell_list(Q_PA,Q_CH,Q_adjs,Q_small_seps,Q_big_seps,Q_inters,Q_uni_adjs);
+
+
+  for(int i=0; i<Q_CH.rows(); i++){
+    if(Q_CH(i,0)==-1){
+      leaf_cells.emplace_back(i);
+    }
+  }
+  qI.resize(Q.rows());
+  #pragma omp parallel for
+  for(int i=0; i<leaf_cells.size(); i++){
+    for(int ci=0; ci<Q_QI[leaf_cells[i]].size(); ci++){
+      qI(Q_QI[leaf_cells[i]][ci]) = leaf_cells[i];
+    }
+  }
+  std::vector<std::vector<int > > levels(Q_LV.maxCoeff()+1);
+  for (int i=0; i<Q_LV.size(); i++){
+    levels[Q_LV(i)].emplace_back(i);
+  }
+
+  // sigma = Eigen::MatrixXd::Ones(qI.size(),b.cols());
+  infinite::solve_fmm_gmres_hybrid(b,b_norm,mu,restart,tol,maxIters,num_expansion,
+    qI,VU,N,L,Q,sing_id_list,sing_t_list,Q_PEI,Q_QI,levels,Q_LL,Q_PP,Q_CH,Q_LV,Q_CN,
+    Q_adjs,Q_small_seps,Q_inters,Q_big_seps,leaf_cells,Ik_out_list_list,Ok_inter_list_list,Ik_child_list,
+    Ok_inc_list_list,lw_list,G_list,F_list,nI_list,Ok_l3_list,Ik_inc_list,sigma);
+}
+
 
 
 

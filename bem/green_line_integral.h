@@ -9,6 +9,12 @@
 
 namespace infinite
 {
+    double green_line_integral(const Eigen::MatrixX2d &P,
+                         const Eigen::MatrixX2i &E,
+                         const int &id,
+                         const double &l,
+                         const Eigen::RowVector2d &Q);
+
 
     double green_line_integral(const Eigen::Matrix2d &PEs,
                          const Eigen::RowVector2d &Q);

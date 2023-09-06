@@ -62,8 +62,8 @@ int main( int argc, char **argv )
   Eigen::MatrixXd RGB; //output rgb values
 
 
-  unsigned int resol_width=2*(int)image_width;
-  unsigned int resol_height=2*(int)image_height;
+  unsigned int resol_width=(int)image_width;
+  unsigned int resol_height=(int)image_height;
 
   if(argc==3){
     resol_width *= std::atoi(argv[2]);
@@ -78,8 +78,8 @@ int main( int argc, char **argv )
   Eigen::MatrixX2d Q = create_regular_grid(resol_width,resol_height,image_width,image_height);
 
   int nb = CPs.size(); //number of curves
-  int ng = 4; //number of quadrature points
-  int ns = 20; //number of line segments for solving stage
+  int ng = 6;//4; //number of quadrature points
+  int ns = 40;//20; //number of line segments for solving stage
 
   std::cout<<"num curve: "<<nb<<std::endl;
 
@@ -177,7 +177,9 @@ int main( int argc, char **argv )
   Eigen::VectorXd cL = infinite::bezier_length(CPs);
   {
     Eigen::VectorXd cLi = cL.array()/10;
-    Eigen::VectorXi nel = cLi.cast<int>().array()+20;
+    // Eigen::VectorXi nel = cLi.cast<int>().array()+20;
+
+    Eigen::VectorXi nel = ns*Eigen::VectorXi::Ones(nb);
 
     //list of parameter values line segments for evaluation
     VecXd_list tel(nb);
@@ -198,6 +200,8 @@ int main( int argc, char **argv )
 
     infinite::discretize_diffcurv(CPs,CLCs,CLTs,CRCs,CRTs,nel,tel,tecl,
                                   Pe,Ce,Ne,Ee,Le,ue_l,ue_r);
+
+
 
     Eigen::MatrixXd sigma_e = infinite::interpolate_density(tg,tecl,sigma_g);
     Eigen::MatrixXd mu_e = ue_l-ue_r;

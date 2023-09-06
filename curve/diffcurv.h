@@ -34,6 +34,22 @@ namespace infinite{
                                 MatX3d_list &CRCs,
                                 VecXd_list &CRTs);
 
+    void discretize_diffcurv_bezier(const Mat42_list &CPs,
+                                  const MatX3d_list &CLCs,
+                                  const VecXd_list &CLTs,
+                                  const MatX3d_list &CRCs,
+                                  const VecXd_list &CRTs,
+                                  const Eigen::VectorXi &nel,
+                                  const VecXd_list &xel,
+                                  const VecXd_list &xecl,
+                                  Eigen::MatrixX2d &P,
+                                  Eigen::MatrixX2d &C,
+                                  Eigen::MatrixX2d &N,
+                                  Eigen::MatrixX2i &E,
+                                  Eigen::VectorXd &L,
+                                  Eigen::MatrixX3d &u_l,
+                                  Eigen::MatrixX3d &u_r);
+
     void discretize_diffcurv(const Mat42_list &CPs,
                             const MatX3d_list &CLCs,
                             const VecXd_list &CLTs,

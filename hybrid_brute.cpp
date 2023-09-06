@@ -158,9 +158,18 @@ int main( int argc, char **argv )
 
     double eval_s = igl::get_seconds();
     {
-      Eigen::MatrixXd Gv,Fv;
-      infinite::green_line_integral(Pe,Ee,Ne,Le,Q,Gv,Fv);
-      RGB = Gv*sigma_e+Fv*mu_e;
+      //brute
+      // Eigen::MatrixXd Gv,Fv;
+      // infinite::green_line_integral(Pe,Ee,Ne,Le,Q,Gv,Fv);
+      // RGB = Gv*sigma_e+Fv*mu_e;
+      // RGB = RGB.cwiseMax(0);
+      // RGB = RGB.cwiseMin(1);
+
+      //fmm
+      int num_expansion = 4;
+      int min_pnt_num = 5;
+      int max_depth = std::numeric_limits<int>::max();
+      infinite::eval_fmm_integral(Pe,Ee,Ce,Ne,Le,Q,sigma_e,mu_e,num_expansion,min_pnt_num,max_depth,RGB);
       RGB = RGB.cwiseMax(0);
       RGB = RGB.cwiseMin(1);
 

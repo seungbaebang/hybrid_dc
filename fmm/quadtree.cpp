@@ -891,6 +891,178 @@ void infinite::adap_quadtree(const Eigen::VectorXi &cI,
 }
 
 
+void infinite::quadtree_test(const Eigen::MatrixXd &P, 
+             const Eigen::MatrixXi &E,
+             const Eigen::MatrixXd &C, 
+             const Eigen::MatrixXd &Q,
+             const Eigen::RowVector2d& minP, 
+             const Eigen::RowVector2d& maxP,
+             const int& min_depth,
+             const int& min_pnt_num,
+             std::vector<std::vector<int> > &P_I, 
+             std::vector<std::vector<int> > &P_EI,
+             std::vector<std::vector<int> > &Q_I,
+             RowVec2d_list_list &P_LL,
+             Mat2d_list_list &PP,
+             Eigen::MatrixXi &CH,
+             Eigen::VectorXi &PA,
+             Eigen::VectorXi &LV,
+             Eigen::MatrixXd &CN, 
+             Eigen::VectorXd &W) 
+{
+  std::cout<<"quadtree_test in"<<std::endl;
+  double s = igl::get_seconds();
+  std::vector<Eigen::Vector4i,
+      Eigen::aligned_allocator<Eigen::Vector4i> > children;
+  std::vector<Eigen::RowVector2d,
+      Eigen::aligned_allocator<Eigen::RowVector2d> > centers;
+
+
+  std::vector<int> parent;
+  std::vector<int> levels;
+  std::vector<double> widths;
+
+  int m = 0;
+  int opt_depth = 0;
+
+  // Useful list of number 0,1,2,3
+  const Eigen::Vector4i zero_to_three =
+      (Eigen::Vector4i() << 0, 1, 2, 3).finished();
+  const Eigen::Vector4i neg_ones = Eigen::Vector4i::Constant(-1);
+
+  std::function<void(const int, const int)> build_quadtree;
+  build_quadtree = [&build_quadtree,&m,&zero_to_three,&neg_ones,&P,&E,&C,&Q, 
+      &P_I,&P_EI,&Q_I,&P_LL,&PP,&children,&parent,&levels, 
+      &centers,&widths,&min_depth,&min_pnt_num,&opt_depth]
+      (const int index, const int depth) -> void {
+        // std::cout<<"P_I size: "<<P_I.at(index).size()<<", depth: "<<depth<<" min depth: "<<min_depth<<", test:"<<((P_I.at(index).size() > 1) || ((P_I.at(index).size()==1) && depth < min_depth))<<std::endl;
+    if ((P_I.at(index).size() > 1) || 
+        ((P_EI.at(index).size()>0) && depth < min_depth)) {
+
+      children.at(index) = zero_to_three.array() + m;
+      double h = widths.at(index) / 2;
+      Eigen::RowVector2d curr_center = centers.at(index);
+
+      for (int i = 0; i < 4; i++) {
+        children.emplace_back(neg_ones);
+        P_I.emplace_back(std::vector<int>());
+        Q_I.emplace_back(std::vector<int>());
+        centers.emplace_back(translate_center(curr_center, h / 2, i));
+        widths.emplace_back(h);
+        parent.emplace_back(index);
+        levels.emplace_back(depth);
+        P_EI.emplace_back(std::vector<int>());
+        P_LL.emplace_back(RowVec2d_list());
+        PP.emplace_back(Mat2d_list());
+      }
+
+      //Split up the points into the corresponding children
+      for (int j = 0; j < P_I.at(index).size(); j++) {
+        int curr_point_index = P_I.at(index).at(j);
+        int cell_of_curr_point = get_quad(C.row(curr_point_index),
+            curr_center) + m;
+        P_I.at(cell_of_curr_point).emplace_back(
+            curr_point_index);
+      }
+      for (int j = 0; j < Q_I.at(index).size(); j++) {
+        int curr_point_index = Q_I.at(index).at(j);
+        int cell_of_curr_point = get_quad(Q.row(curr_point_index),
+            curr_center) + m;
+        Q_I.at(cell_of_curr_point).emplace_back(
+            curr_point_index);
+      }
+
+      for (int i = 0; i < 4; i++) {
+        Eigen::Matrix2d bnd;
+        bnd(0,0) = centers[m+i](0)-h/2;
+        bnd(1,0) = centers[m+i](0)+h/2;
+        bnd(0,1) = centers[m+i](1)-h/2;
+        bnd(1,1) = centers[m+i](1)+h/2;
+
+        for (int j = 0; j < P_EI.at(index).size(); j++) {
+          int curr_point_index = P_EI.at(index).at(j);
+          Eigen::RowVector2d p1 = P.row(E(curr_point_index,0));
+          Eigen::RowVector2d p2 = P.row(E(curr_point_index,1));
+
+          Eigen::RowVector2d np1, np2, rns; 
+          if(liang_barsky_clipper(bnd,p1,p2,np1,np2,rns)){
+            P_EI.at(m+i).emplace_back(curr_point_index);
+            P_LL.at(m+i).emplace_back(rns);
+            Eigen::Matrix2d nps;
+            nps.row(0) = np1;
+            nps.row(1) = np2;
+            PP.at(m+i).emplace_back(nps);
+          }
+        }
+      }
+      //Now increase m
+      m += 4;
+      opt_depth = std::max(opt_depth,depth);
+      for (int i = 0; i < 4; i++) {
+        build_quadtree(children.at(index)(i), depth + 1);
+      }
+    }
+  };
+
+  {
+    std::vector<int> allC(C.rows());
+    for (int i = 0; i < allC.size(); i++)
+      allC[i] = i;
+    std::vector<int> allQ(Q.rows());
+    for (int i = 0; i < allQ.size(); i++)
+      allQ[i] = i;
+    P_I.emplace_back(allC);
+    P_EI.emplace_back(allC);    
+    Q_I.emplace_back(allQ);
+    P_LL.emplace_back(RowVec2d_list());
+    PP.emplace_back(Mat2d_list());
+  }
+
+  children.emplace_back(neg_ones);
+  parent.emplace_back(-2);
+  levels.emplace_back(0);
+
+  //Get the minimum AABB for the points
+  Eigen::RowVector2d aabb_center = (minP + maxP) / double(2.0);
+  double aabb_width = (maxP - minP).maxCoeff();
+  centers.emplace_back(aabb_center);
+
+  //Widths are the side length of the cube, (not half the side length):
+  widths.emplace_back(aabb_width);
+  m++;
+  // then you have to actually call the function
+  build_quadtree(0, 0);
+
+  //Now convert from vectors to Eigen matricies:
+  CH.resize(children.size(), 4);
+  CN.resize(centers.size(), 2);
+  W.resize(widths.size(), 1);
+  PA.resize(parent.size(),1);
+  LV.resize(levels.size(),1);
+
+  for (int i = 0; i < children.size(); i++) {
+    CH.row(i) = children.at(i);
+  }
+  for (int i = 0; i < centers.size(); i++) {
+    CN.row(i) = centers.at(i);
+  }
+  for (int i = 0; i < widths.size(); i++) {
+    W(i) = widths.at(i);
+  }
+  for (int i = 0; i < parent.size(); i++) {
+    PA(i) = parent.at(i);
+  }
+  for (int i = 0; i < levels.size(); i++) {
+    LV(i) = levels.at(i);
+  }
+  // LV.resize(opt_depth+1);
+  // for (int i=0;i<levels.size(); i++){
+  //   LV[levels[i]].emplace_back(i);
+  // }
+  double t = igl::get_seconds();
+}
+
+
 
 
 void infinite::quadtree(const Eigen::MatrixXd &P, 
@@ -1250,6 +1422,175 @@ void infinite::quadtree(const Eigen::MatrixXd &P,
   // for (int i=0;i<levels.size(); i++){
   //   LV[levels[i]].emplace_back(i);
   // }
+
+}
+
+
+
+void infinite::quadtree(const Eigen::MatrixXd &P, 
+             const Eigen::MatrixXd &Q,
+             const Eigen::RowVector2d& minP, 
+             const Eigen::RowVector2d& maxP,
+             const int& max_depth,
+             const int& min_pnt_num,
+             std::vector<std::vector<int> > &P_I, 
+             std::vector<std::vector<int> > &Q_I, 
+             Eigen::MatrixXi &CH,
+             Eigen::VectorXi &PA,
+             Eigen::VectorXi &LV,
+             Eigen::MatrixXd &CN, 
+             Eigen::VectorXd &W) 
+{
+
+ std::vector<Eigen::Vector4i,
+      Eigen::aligned_allocator<Eigen::Vector4i> > children;
+  std::vector<Eigen::RowVector2d,
+      Eigen::aligned_allocator<Eigen::RowVector2d> > centers;
+
+
+  std::vector<int> parent;
+  std::vector<int> levels;
+  std::vector<double> widths;
+
+  auto get_quad = [](const Eigen::RowVector2d &location,
+    const Eigen::RowVector2d &center) {
+    int index = 0;
+    if (location(0) >= center(0)) {
+      index = index + 1;
+    }
+    if (location(1) >= center(1)) {
+      index = index + 2;
+    }
+    return index;
+  };
+
+  std::function<
+      Eigen::RowVector2d(const Eigen::RowVector2d, const double,
+          const int)> translate_center = [](
+      const Eigen::RowVector2d &parent_center, const double h,
+      const int child_index) {
+    Eigen::RowVector2d change_vector;
+    change_vector << -h, -h;
+
+    //positive x chilren are 1,3
+    if (child_index % 2) {
+      change_vector(0) = h;
+    }
+    //positive y children are 2,3
+    if (child_index == 2 || child_index == 3) {
+      change_vector(1) = h;
+    }
+    Eigen::RowVector2d output = parent_center + change_vector;
+    return output;
+  };
+
+  // How many cells do we have so far?
+  int m = 0;
+  int opt_depth=0;
+
+  // Useful list of number 0,1,2,3
+  const Eigen::Vector4i zero_to_three =
+      (Eigen::Vector4i() << 0, 1, 2, 3).finished();
+  const Eigen::Vector4i neg_ones = Eigen::Vector4i::Constant(-1);
+
+  std::function<void(const int, const int)> helper;
+  helper = [&helper, &translate_center, &get_quad, &m, &zero_to_three,
+      &neg_ones, &P, &Q, &P_I, &Q_I, &children, &parent, &levels, &centers, &widths,
+      &max_depth, &min_pnt_num, &opt_depth](const int index, const int depth) -> void {
+    if (P_I.at(index).size() > min_pnt_num && depth < max_depth) {
+      //give the parent access to the children
+      children.at(index) = zero_to_three.array() + m;
+      //make the children's data in our arrays
+
+      //Add the children to the lists, as default children
+      double h = widths.at(index) / 2;
+      Eigen::RowVector2d curr_center = centers.at(index);
+
+      for (int i = 0; i < 4; i++) {
+        children.emplace_back(neg_ones);
+        P_I.emplace_back(std::vector<int>());
+        Q_I.emplace_back(std::vector<int>());
+        centers.emplace_back(translate_center(curr_center, h / 2, i));
+        widths.emplace_back(h);
+        parent.emplace_back(index);
+        levels.emplace_back(depth);
+      }
+
+      //Split up the points into the corresponding children
+      for (int j = 0; j < P_I.at(index).size(); j++) {
+        int curr_point_index = P_I.at(index).at(j);
+        int cell_of_curr_point = get_quad(P.row(curr_point_index),
+            curr_center) + m;
+        P_I.at(cell_of_curr_point).emplace_back(
+            curr_point_index);
+      }
+      for (int j = 0; j < Q_I.at(index).size(); j++) {
+        int curr_point_index = Q_I.at(index).at(j);
+        int cell_of_curr_point = get_quad(Q.row(curr_point_index),
+            curr_center) + m;
+        Q_I.at(cell_of_curr_point).emplace_back(
+            curr_point_index);
+      }
+      //Now increase m
+      m += 4;
+      opt_depth = std::max(opt_depth,depth);
+
+      // Look ma, I'm calling myself.
+      for (int i = 0; i < 4; i++) {
+        helper(children.at(index)(i), depth + 1);
+      }
+    }
+  };
+
+
+  {
+    std::vector<int> allP(P.rows());
+    for (int i = 0; i < allP.size(); i++)
+      allP[i] = i;
+    std::vector<int> allQ(Q.rows());
+    for (int i = 0; i < allQ.size(); i++)
+      allQ[i] = i;
+
+    P_I.emplace_back(allP);
+    Q_I.emplace_back(allQ);
+  }
+  children.emplace_back(neg_ones);
+  parent.emplace_back(-2);
+  levels.emplace_back(0);
+
+  //Get the minimum AABB for the points
+  Eigen::RowVector2d aabb_center = (minP + maxP) / double(2.0);
+  double aabb_width = (maxP - minP).maxCoeff();
+  centers.emplace_back(aabb_center);
+
+  //Widths are the side length of the cube, (not half the side length):
+  widths.emplace_back(aabb_width);
+  m++;
+  // then you have to actually call the function
+  helper(0, 0);
+
+  //Now convert from vectors to Eigen matricies:
+  CH.resize(children.size(), 4);
+  CN.resize(centers.size(), 2);
+  W.resize(widths.size(), 1);
+  PA.resize(parent.size(),1);
+  LV.resize(levels.size(),1);
+
+  for (int i = 0; i < children.size(); i++) {
+    CH.row(i) = children.at(i);
+  }
+  for (int i = 0; i < centers.size(); i++) {
+    CN.row(i) = centers.at(i);
+  }
+  for (int i = 0; i < widths.size(); i++) {
+    W(i) = widths.at(i);
+  }
+  for (int i = 0; i < parent.size(); i++) {
+    PA(i) = parent.at(i);
+  }
+  for (int i = 0; i < levels.size(); i++) {
+    LV(i) = levels.at(i);
+  }
 
 }
 
@@ -1786,3 +2127,304 @@ void quadtree_uniform(const Eigen::MatrixXd &P,
     PA(i) = parent.at(i);
   }
 }
+
+
+
+
+void infinite::quadtree_uniform(const Eigen::MatrixXd &P, 
+             const Eigen::MatrixXi &E,
+             const Eigen::MatrixXd &C, 
+             const Eigen::MatrixXd &Q,
+             const Eigen::RowVector2d& minP, 
+             const Eigen::RowVector2d& maxP,
+             const int& set_depth,
+             std::vector<std::vector<int> > &P_I, 
+             std::vector<std::vector<int> > &P_EI,
+             std::vector<std::vector<int> > &Q_I,
+             RowVec2d_list_list &P_LL,
+             Mat2d_list_list &PP,
+             Eigen::MatrixXi &CH,
+             Eigen::VectorXi &PA,
+             Eigen::VectorXi &LV,
+             Eigen::MatrixXd &CN, 
+             Eigen::VectorXd &W) 
+{
+  double s = igl::get_seconds();
+  std::vector<Eigen::Vector4i,
+      Eigen::aligned_allocator<Eigen::Vector4i> > children;
+  std::vector<Eigen::RowVector2d,
+      Eigen::aligned_allocator<Eigen::RowVector2d> > centers;
+
+
+  std::vector<int> parent;
+  std::vector<int> levels;
+  std::vector<double> widths;
+
+  int m = 0;
+
+  // Useful list of number 0,1,2,3
+  const Eigen::Vector4i zero_to_three =
+      (Eigen::Vector4i() << 0, 1, 2, 3).finished();
+  const Eigen::Vector4i neg_ones = Eigen::Vector4i::Constant(-1);
+
+  std::function<void(const int, const int)> build_quadtree;
+  build_quadtree = [&build_quadtree,&m,&zero_to_three,&neg_ones,&P,&E,&C,&Q, 
+      &P_I,&P_EI,&Q_I,&P_LL,&PP,&children,&parent,&levels, 
+      &centers,&widths,&set_depth]
+      (const int index, const int depth) -> void {
+    if (depth <= set_depth) {
+
+      children.at(index) = zero_to_three.array() + m;
+      double h = widths.at(index) / 2;
+      Eigen::RowVector2d curr_center = centers.at(index);
+
+      for (int i = 0; i < 4; i++) {
+        children.emplace_back(neg_ones);
+        P_I.emplace_back(std::vector<int>());
+        Q_I.emplace_back(std::vector<int>());
+        centers.emplace_back(translate_center(curr_center, h / 2, i));
+        widths.emplace_back(h);
+        parent.emplace_back(index);
+        levels.emplace_back(depth);
+        P_EI.emplace_back(std::vector<int>());
+        P_LL.emplace_back(RowVec2d_list());
+        PP.emplace_back(Mat2d_list());
+      }
+
+      //Split up the points into the corresponding children
+      for (int j = 0; j < P_I.at(index).size(); j++) {
+        int curr_point_index = P_I.at(index).at(j);
+        int cell_of_curr_point = get_quad(C.row(curr_point_index),
+            curr_center) + m;
+        P_I.at(cell_of_curr_point).emplace_back(
+            curr_point_index);
+      }
+      for (int j = 0; j < Q_I.at(index).size(); j++) {
+        int curr_point_index = Q_I.at(index).at(j);
+        int cell_of_curr_point = get_quad(Q.row(curr_point_index),
+            curr_center) + m;
+        Q_I.at(cell_of_curr_point).emplace_back(
+            curr_point_index);
+      }
+
+      for (int i = 0; i < 4; i++) {
+        Eigen::Matrix2d bnd;
+        bnd(0,0) = centers[m+i](0)-h/2;
+        bnd(1,0) = centers[m+i](0)+h/2;
+        bnd(0,1) = centers[m+i](1)-h/2;
+        bnd(1,1) = centers[m+i](1)+h/2;
+
+        for (int j = 0; j < P_EI.at(index).size(); j++) {
+          int curr_point_index = P_EI.at(index).at(j);
+          Eigen::RowVector2d p1 = P.row(E(curr_point_index,0));
+          Eigen::RowVector2d p2 = P.row(E(curr_point_index,1));
+
+          Eigen::RowVector2d np1, np2, rns; 
+          if(liang_barsky_clipper(bnd,p1,p2,np1,np2,rns)){
+            P_EI.at(m+i).emplace_back(curr_point_index);
+            P_LL.at(m+i).emplace_back(rns);
+            Eigen::Matrix2d nps;
+            nps.row(0) = np1;
+            nps.row(1) = np2;
+            PP.at(m+i).emplace_back(nps);
+          }
+        }
+      }
+      //Now increase m
+      m += 4;
+      for (int i = 0; i < 4; i++) {
+        build_quadtree(children.at(index)(i), depth + 1);
+      }
+    }
+  };
+
+  {
+    std::vector<int> allC(C.rows());
+    for (int i = 0; i < allC.size(); i++)
+      allC[i] = i;
+    std::vector<int> allQ(Q.rows());
+    for (int i = 0; i < allQ.size(); i++)
+      allQ[i] = i;
+    P_I.emplace_back(allC);
+    P_EI.emplace_back(allC);    
+    Q_I.emplace_back(allQ);
+    P_LL.emplace_back(RowVec2d_list());
+    PP.emplace_back(Mat2d_list());
+  }
+
+  children.emplace_back(neg_ones);
+  parent.emplace_back(-2);
+  levels.emplace_back(0);
+
+  //Get the minimum AABB for the points
+  Eigen::RowVector2d aabb_center = (minP + maxP) / double(2.0);
+  double aabb_width = (maxP - minP).maxCoeff();
+  centers.emplace_back(aabb_center);
+
+  //Widths are the side length of the cube, (not half the side length):
+  widths.emplace_back(aabb_width);
+  m++;
+  // then you have to actually call the function
+  build_quadtree(0, 0);
+
+  //Now convert from vectors to Eigen matricies:
+  CH.resize(children.size(), 4);
+  CN.resize(centers.size(), 2);
+  W.resize(widths.size(), 1);
+  PA.resize(parent.size(),1);
+  LV.resize(levels.size(),1);
+
+  for (int i = 0; i < children.size(); i++) {
+    CH.row(i) = children.at(i);
+  }
+  for (int i = 0; i < centers.size(); i++) {
+    CN.row(i) = centers.at(i);
+  }
+  for (int i = 0; i < widths.size(); i++) {
+    W(i) = widths.at(i);
+  }
+  for (int i = 0; i < parent.size(); i++) {
+    PA(i) = parent.at(i);
+  }
+  for (int i = 0; i < levels.size(); i++) {
+    LV(i) = levels.at(i);
+  }
+  // LV.resize(opt_depth+1);
+  // for (int i=0;i<levels.size(); i++){
+  //   LV[levels[i]].emplace_back(i);
+  // }
+  double t = igl::get_seconds();
+}
+
+
+void infinite::quadtree_uniform(const Eigen::MatrixXd &C, 
+             const Eigen::MatrixXd &Q,
+             const Eigen::RowVector2d& minP, 
+             const Eigen::RowVector2d& maxP,
+             const int& set_depth,
+             std::vector<std::vector<int> > &P_I, 
+             std::vector<std::vector<int> > &Q_I,
+             Eigen::MatrixXi &CH,
+             Eigen::VectorXi &PA,
+             Eigen::VectorXi &LV,
+             Eigen::MatrixXd &CN, 
+             Eigen::VectorXd &W) 
+{
+  double s = igl::get_seconds();
+  std::vector<Eigen::Vector4i,
+      Eigen::aligned_allocator<Eigen::Vector4i> > children;
+  std::vector<Eigen::RowVector2d,
+      Eigen::aligned_allocator<Eigen::RowVector2d> > centers;
+
+
+  std::vector<int> parent;
+  std::vector<int> levels;
+  std::vector<double> widths;
+
+  int m = 0;
+
+  // Useful list of number 0,1,2,3
+  const Eigen::Vector4i zero_to_three =
+      (Eigen::Vector4i() << 0, 1, 2, 3).finished();
+  const Eigen::Vector4i neg_ones = Eigen::Vector4i::Constant(-1);
+
+  std::function<void(const int, const int)> build_quadtree;
+  build_quadtree = [&build_quadtree,&m,&zero_to_three,&neg_ones,&C,&Q, 
+      &P_I,&Q_I,&children,&parent,&levels, 
+      &centers,&widths,&set_depth]
+      (const int index, const int depth) -> void {
+    if (depth <= set_depth) {
+
+      children.at(index) = zero_to_three.array() + m;
+      double h = widths.at(index) / 2;
+      Eigen::RowVector2d curr_center = centers.at(index);
+
+      for (int i = 0; i < 4; i++) {
+        children.emplace_back(neg_ones);
+        P_I.emplace_back(std::vector<int>());
+        Q_I.emplace_back(std::vector<int>());
+        centers.emplace_back(translate_center(curr_center, h / 2, i));
+        widths.emplace_back(h);
+        parent.emplace_back(index);
+        levels.emplace_back(depth);
+      }
+
+      //Split up the points into the corresponding children
+      for (int j = 0; j < P_I.at(index).size(); j++) {
+        int curr_point_index = P_I.at(index).at(j);
+        int cell_of_curr_point = get_quad(C.row(curr_point_index),
+            curr_center) + m;
+        P_I.at(cell_of_curr_point).emplace_back(
+            curr_point_index);
+      }
+      for (int j = 0; j < Q_I.at(index).size(); j++) {
+        int curr_point_index = Q_I.at(index).at(j);
+        int cell_of_curr_point = get_quad(Q.row(curr_point_index),
+            curr_center) + m;
+        Q_I.at(cell_of_curr_point).emplace_back(
+            curr_point_index);
+      }
+      //Now increase m
+      m += 4;
+      for (int i = 0; i < 4; i++) {
+        build_quadtree(children.at(index)(i), depth + 1);
+      }
+    }
+  };
+
+  {
+    std::vector<int> allC(C.rows());
+    for (int i = 0; i < allC.size(); i++)
+      allC[i] = i;
+    std::vector<int> allQ(Q.rows());
+    for (int i = 0; i < allQ.size(); i++)
+      allQ[i] = i;
+    P_I.emplace_back(allC);
+    Q_I.emplace_back(allQ);
+  }
+
+  children.emplace_back(neg_ones);
+  parent.emplace_back(-2);
+  levels.emplace_back(0);
+
+  //Get the minimum AABB for the points
+  Eigen::RowVector2d aabb_center = (minP + maxP) / double(2.0);
+  double aabb_width = (maxP - minP).maxCoeff();
+  centers.emplace_back(aabb_center);
+
+  //Widths are the side length of the cube, (not half the side length):
+  widths.emplace_back(aabb_width);
+  m++;
+  // then you have to actually call the function
+  build_quadtree(0, 0);
+
+  //Now convert from vectors to Eigen matricies:
+  CH.resize(children.size(), 4);
+  CN.resize(centers.size(), 2);
+  W.resize(widths.size(), 1);
+  PA.resize(parent.size(),1);
+  LV.resize(levels.size(),1);
+
+  for (int i = 0; i < children.size(); i++) {
+    CH.row(i) = children.at(i);
+  }
+  for (int i = 0; i < centers.size(); i++) {
+    CN.row(i) = centers.at(i);
+  }
+  for (int i = 0; i < widths.size(); i++) {
+    W(i) = widths.at(i);
+  }
+  for (int i = 0; i < parent.size(); i++) {
+    PA(i) = parent.at(i);
+  }
+  for (int i = 0; i < levels.size(); i++) {
+    LV(i) = levels.at(i);
+  }
+  // LV.resize(opt_depth+1);
+  // for (int i=0;i<levels.size(); i++){
+  //   LV[levels[i]].emplace_back(i);
+  // }
+  double t = igl::get_seconds();
+}
+
+

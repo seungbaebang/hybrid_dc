@@ -37,7 +37,17 @@ namespace infinite{
                         Eigen::MatrixX2i &E,
                         Eigen::VectorXd &L);
 
-    void line_segments_bezier(const Mat42_list &CPs,
+    void line_segments_arclen(const Mat42_list &CPs,
+                        const Eigen::VectorXi &nel,
+                        const VecXd_list &xel,
+                        const VecXd_list &xecl,
+                        Eigen::MatrixX2d &P,
+                        Eigen::MatrixX2d &C,
+                        Eigen::MatrixX2d &N,
+                        Eigen::MatrixX2i &E,
+                        Eigen::VectorXd &L);
+
+    void line_segments_arclen(const Mat42_list &CPs,
                         const Eigen::VectorXi &nel,
                         Eigen::MatrixX2d &P,
                         Eigen::MatrixX2d &C,
@@ -45,7 +55,7 @@ namespace infinite{
                         Eigen::MatrixX2i &E,
                         Eigen::VectorXd &L);
 
-    void line_segments_bezier(const Mat42_list &CPs,
+    void line_segments_arclen(const Mat42_list &CPs,
                         const int &ne,
                         Eigen::MatrixX2d &P,
                         Eigen::MatrixX2d &C,
@@ -53,7 +63,7 @@ namespace infinite{
                         Eigen::MatrixX2i &E,
                         Eigen::VectorXd &L);
 
-    void line_segments_bezier(const Mat42_list &CPs,
+    void line_segments_arclen(const Mat42_list &CPs,
                         const Eigen::VectorXd &xe,
                         const Eigen::VectorXd &xec,
                         Eigen::MatrixX2d &P,

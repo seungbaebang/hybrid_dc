@@ -154,8 +154,7 @@ void infinite::segment_diffcurv(const Eigen::MatrixX2d &CP,
 
 }
 
-
-void infinite::discretize_diffcurv(const Mat42_list &CPs,
+void infinite::discretize_diffcurv_bezier(const Mat42_list &CPs,
                                   const MatX3d_list &CLCs,
                                   const VecXd_list &CLTs,
                                   const MatX3d_list &CRCs,
@@ -177,6 +176,29 @@ void infinite::discretize_diffcurv(const Mat42_list &CPs,
   infinite::diffcurv_color(CRCs,CRTs,xecl,u_r);
 }
 
+
+void infinite::discretize_diffcurv(const Mat42_list &CPs,
+                                  const MatX3d_list &CLCs,
+                                  const VecXd_list &CLTs,
+                                  const MatX3d_list &CRCs,
+                                  const VecXd_list &CRTs,
+                                  const Eigen::VectorXi &nel,
+                                  const VecXd_list &xel,
+                                  const VecXd_list &xecl,
+                                  Eigen::MatrixX2d &P,
+                                  Eigen::MatrixX2d &C,
+                                  Eigen::MatrixX2d &N,
+                                  Eigen::MatrixX2i &E,
+                                  Eigen::VectorXd &L,
+                                  Eigen::MatrixX3d &u_l,
+                                  Eigen::MatrixX3d &u_r)
+{
+  infinite::line_segments_arclen(CPs,nel,xel,xecl,P,C,N,E,L);
+
+  infinite::diffcurv_color(CLCs,CLTs,xecl,u_l);
+  infinite::diffcurv_color(CRCs,CRTs,xecl,u_r);
+}
+
 void infinite::discretize_diffcurv(const Mat42_list &CPs,
                                   const MatX3d_list &CLCs,
                                   const VecXd_list &CLTs,
@@ -192,7 +214,7 @@ void infinite::discretize_diffcurv(const Mat42_list &CPs,
                                   Eigen::MatrixX3d &u_l,
                                   Eigen::MatrixX3d &u_r)
 {
-  infinite::line_segments_bezier(CPs,xe,xec,P,C,N,E,L);
+  infinite::line_segments_arclen(CPs,xe,xec,P,C,N,E,L);
 
   infinite::diffcurv_color(CLCs,CLTs,xec,u_l);
   infinite::diffcurv_color(CRCs,CRTs,xec,u_r);
@@ -216,7 +238,7 @@ void infinite::discretize_diffcurv(const Mat42_list &CPs,
                                   Eigen::MatrixX3d &u_l,
                                   Eigen::MatrixX3d &u_r)
 {
-  infinite::line_segments_bezier(CPs,xe,xec,P,C,N,E,L);
+  infinite::line_segments_arclen(CPs,xe,xec,P,C,N,E,L);
   infinite::bezier_curves_points(CPs,xg,Q);
 
   infinite::diffcurv_color(CLCs,CLTs,xg,u_l);
@@ -266,7 +288,7 @@ void infinite::rediscretize_diffcurv(const Eigen::VectorXd &xs,
   Eigen::VectorXd sL;
 
   Eigen::MatrixX3d us_l, us_r;
-  infinite::line_segments_bezier(sCPs,xs,xsc,sP,sC,sN,sE,sL);
+  infinite::line_segments_arclen(sCPs,xs,xsc,sP,sC,sN,sE,sL);
   infinite::bezier_curves_points(sCPs,xg,sQ);
   infinite::diffcurv_color(sCLCs,sCLTs,xg,us_l);
   infinite::diffcurv_color(sCRCs,sCRTs,xg,us_r);

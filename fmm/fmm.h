@@ -34,6 +34,38 @@ typedef Eigen::Matrix<double,4,2> Mat42;
 
 namespace infinite{
     
+void precompute_expansions_cell_dependent_noclip
+                    (const Eigen::MatrixX2d &P,
+                     const Eigen::MatrixX2i &E,
+                     const Eigen::MatrixX2d &N,
+                     const Eigen::VectorXd &L,
+                     const int &num_expansion,
+                     const std::vector<std::vector<int > > &Q_PI,
+                     const Eigen::MatrixXi &Q_CH,
+                     const Eigen::VectorXi &Q_LV,
+                     const Eigen::MatrixXd &Q_CN, 
+                     const std::vector<std::vector<int> > &Q_inters,
+                     const std::vector<std::vector<int> > &Q_big_seps,
+                     std::vector<VecXcd_list> &Ik_out_list_list,
+                     std::vector<VecXcd_list> &Ok_inter_list_list,
+                     MatXcd_list &Ik_child_list,
+                     std::vector<std::vector<VecXcd_list> > &Ok_inc_list_list);
+
+void precompute_expansions_cell_dependent
+                    (const Eigen::MatrixX2d &P,
+                     const Eigen::MatrixX2i &E,
+                     const Eigen::MatrixX2d &N,
+                     const Eigen::VectorXd &L,
+                     const int &num_expansion,
+                     const std::vector<std::vector<int > > &Q_PI,
+                     const Eigen::MatrixXi &Q_CH,
+                     const Eigen::VectorXi &Q_LV,
+                     const Eigen::MatrixXd &Q_CN, 
+                     const std::vector<std::vector<int> > &Q_inters,
+                     std::vector<VecXcd_list> &Ik_out_list_list,
+                     std::vector<VecXcd_list> &Ok_inter_list_list,
+                     MatXcd_list &Ik_child_list);
+
 void precompute_expansions_cell_dependent
                     (const Eigen::MatrixX2d &N,
                      const Eigen::VectorXd &L,

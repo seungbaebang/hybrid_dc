@@ -96,6 +96,29 @@ namespace infinite{
             Eigen::VectorXd &W,
             Eigen::VectorXi &SC);
 
+
+    void quadtree_test(const Eigen::MatrixXd &P, 
+             const Eigen::MatrixXi &E,
+             const Eigen::MatrixXd &C, 
+             const Eigen::MatrixXd &Q,
+             const Eigen::RowVector2d& minP, 
+             const Eigen::RowVector2d& maxP,
+             const int& min_depth,
+             const int& min_pnt_num,
+             std::vector<std::vector<int> > &P_I, 
+             std::vector<std::vector<int> > &P_EI,
+             std::vector<std::vector<int> > &Q_I,
+             RowVec2d_list_list &P_LL,
+             Mat2d_list_list &PP,
+             Eigen::MatrixXi &CH,
+             Eigen::VectorXi &PA,
+             Eigen::VectorXi &LV,
+             Eigen::MatrixXd &CN, 
+             Eigen::VectorXd &W) ;
+
+
+
+
     void quadtree(const Eigen::MatrixXd &P, 
              const Eigen::MatrixXi &E,
              const Eigen::MatrixXd &C, 
@@ -134,6 +157,20 @@ namespace infinite{
             Eigen::VectorXd &W);
 
 
+void quadtree(const Eigen::MatrixXd &P, 
+             const Eigen::MatrixXd &Q,
+             const Eigen::RowVector2d& minP, 
+             const Eigen::RowVector2d& maxP,
+             const int& max_depth,
+             const int& min_pnt_num,
+             std::vector<std::vector<int> > &P_I, 
+             std::vector<std::vector<int> > &Q_I, 
+             Eigen::MatrixXi &CH,
+             Eigen::VectorXi &PA,
+             Eigen::VectorXi &LV,
+             Eigen::MatrixXd &CN, 
+             Eigen::VectorXd &W);
+
 
     void quadtree(const Eigen::MatrixXd &P, 
                 const Eigen::MatrixXd &Q,
@@ -170,7 +207,41 @@ namespace infinite{
                 Eigen::MatrixXi &CH,
                 Eigen::VectorXi &PA,
                 Eigen::MatrixXd &CN, 
-                Eigen::VectorXd &W) 
+                Eigen::VectorXd &W); 
   
+
+        void quadtree_uniform(const Eigen::MatrixXd &P, 
+             const Eigen::MatrixXi &E,
+             const Eigen::MatrixXd &C, 
+             const Eigen::MatrixXd &Q,
+             const Eigen::RowVector2d& minP, 
+             const Eigen::RowVector2d& maxP,
+             const int& set_depth,
+             std::vector<std::vector<int> > &P_I, 
+             std::vector<std::vector<int> > &P_EI,
+             std::vector<std::vector<int> > &Q_I,
+             RowVec2d_list_list &P_LL,
+             Mat2d_list_list &PP,
+             Eigen::MatrixXi &CH,
+             Eigen::VectorXi &PA,
+             Eigen::VectorXi &LV,
+             Eigen::MatrixXd &CN, 
+             Eigen::VectorXd &W);
+
+
+        void quadtree_uniform(
+             const Eigen::MatrixXd &C, 
+             const Eigen::MatrixXd &Q,
+             const Eigen::RowVector2d& minP, 
+             const Eigen::RowVector2d& maxP,
+             const int& set_depth,
+             std::vector<std::vector<int> > &P_I, 
+             std::vector<std::vector<int> > &Q_I,
+             Eigen::MatrixXi &CH,
+             Eigen::VectorXi &PA,
+             Eigen::VectorXi &LV,
+             Eigen::MatrixXd &CN, 
+             Eigen::VectorXd &W);
+
 }
 #endif

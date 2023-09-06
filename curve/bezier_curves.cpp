@@ -91,7 +91,53 @@ Eigen::MatrixX2d infinite::second_derivative_bezier(const Mat42 &CP, const Eigen
   return ddP;
 }
 
+
 void infinite::line_segments_bezier(const Mat42_list &CPs,
+                        const Eigen::VectorXi &nel,
+                        const VecXd_list &xel,
+                        const VecXd_list &xecl,
+                        Eigen::MatrixX2d &P,
+                        Eigen::MatrixX2d &C,
+                        Eigen::MatrixX2d &N,
+                        Eigen::MatrixX2i &E,
+                        Eigen::VectorXd &L)
+{
+  int nb = CPs.size();
+  int np=0;
+  Eigen::VectorXi sil(nel.size());
+  for(int k=0; k<nel.size(); k++){
+    sil(k)=np;
+    np=np+nel(k);
+  }
+
+  P.resize(np+nb,2);
+  C.resize(np,2);
+  N.resize(np,2);
+  L.resize(np);
+
+  #pragma omp parallel for
+  for(int k=0; k<nb; k++){
+    int ne = nel(k);
+    int si = sil(k);
+    Eigen::VectorXd xe = xel[k];
+    Eigen::VectorXd xec = xecl[k];
+
+    Eigen::MatrixX2d Pk = points_bezier(CPs[k],xe);
+    Eigen::MatrixX2d Ck = points_bezier(CPs[k],xec);
+    Eigen::MatrixX2d Nk = normal_bezier(CPs[k],xec);
+    Eigen::VectorXd Lk = cubic_length(CPs[k],xe.head(ne),xe.tail(ne));
+
+    P.block(si+k,0,ne+1,2)=Pk;
+    C.block(si,0,ne,2)=Ck;
+    N.block(si,0,ne,2)=Nk;
+    L.segment(si,ne)=Lk;
+  }
+  N.rowwise().normalize();
+  edge_indices(nel,E);
+}
+
+
+void infinite::line_segments_arclen(const Mat42_list &CPs,
                         const Eigen::VectorXi &nel,
                         const VecXd_list &xel,
                         const VecXd_list &xecl,
@@ -141,7 +187,7 @@ void infinite::line_segments_bezier(const Mat42_list &CPs,
   edge_indices(nel,E);
 }
 
-void infinite::line_segments_bezier(const Mat42_list &CPs,
+void infinite::line_segments_arclen(const Mat42_list &CPs,
                         const Eigen::VectorXi &nel,
                         Eigen::MatrixX2d &P,
                         Eigen::MatrixX2d &C,
@@ -187,7 +233,7 @@ void infinite::line_segments_bezier(const Mat42_list &CPs,
   edge_indices(nel,E);
 }
 
-void infinite::line_segments_bezier(const Mat42_list &CPs,
+void infinite::line_segments_arclen(const Mat42_list &CPs,
                         const Eigen::VectorXd &xe,
                         const Eigen::VectorXd &xec,
                         Eigen::MatrixX2d &P,
@@ -225,7 +271,7 @@ void infinite::line_segments_bezier(const Mat42_list &CPs,
   E = edge_indices(nb,ne);
 }
 
-void infinite::line_segments_bezier(const Mat42_list &CPs,
+void infinite::line_segments_arclen(const Mat42_list &CPs,
                         const int &ne,
                         Eigen::MatrixX2d &P,
                         Eigen::MatrixX2d &C,
